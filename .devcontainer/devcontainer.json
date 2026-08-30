@@ -1,4 +1,19 @@
 {
     "image":"ghcr.io/srl-labs/containerlab/devcontainer-dind-slim:sha-5ae5009",
-    "forwardPorts": [50080]
+    "forwardPorts": [50080],
+    "customizations": {
+        "codespaces": {
+            "repositories": {
+                /* for installing forked slidev as a submodule in slide/ */
+                "coolwind0202/slidev": {
+                    "permissions": {
+                        "contents": "read"
+                    }
+                }
+            }
+        }
+    },
+    "features": {
+        "ghcr.io/devcontainers/features/node:2": {}
+    }
 }

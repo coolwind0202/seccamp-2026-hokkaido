@@ -1,0 +1,3 @@
+[submodule "slide/slidev"]
+	path = slide/slidev
+	url = https://github.com/coolwind0202/slidev.git
