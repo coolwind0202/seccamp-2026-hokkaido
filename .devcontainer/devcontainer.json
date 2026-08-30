@@ -1,0 +1,4 @@
+{
+    "image":"ghcr.io/srl-labs/containerlab/devcontainer-dind-slim:sha-5ae5009",
+    "forwardPorts": [50080]
+}
