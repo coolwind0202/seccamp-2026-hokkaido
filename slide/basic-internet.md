@@ -12,23 +12,6 @@ fonts:
 
 ---
 
-
-<p id="hello-world">リンク先</p>
-
----
-routeAlias: alias
----
-
-<a href="#hello-world">リンクです</a>
-
-
----
-
-<Link to="3">3ページ目へ</Link>
-<Link to="alias">エイリアスへ</Link>
-
----
-
 # 事前講義の意図
 当日に行う講義では、DDoS 攻撃やその周辺知識について、<br>詳しい解説を行います。
 
