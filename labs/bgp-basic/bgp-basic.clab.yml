@@ -1,0 +1,38 @@
+name: bgp-1
+
+topology:
+  defaults:
+    kind: linux
+
+  groups:
+    routers:
+      image: quay.io/frrouting/frr:10.5.1
+      binds:
+        - ./frr/__clabNodeName__.conf:/etc/frr/frr.conf
+        - ./frr/daemons:/etc/frr/daemons
+        - ./frr/vtysh.conf:/etc/frr/vtysh.conf
+    hosts:
+      image: ghcr.io/nicolaka/netshoot:v0.16
+
+  nodes:
+    r1:
+      group: routers
+    r2:
+      group: routers
+    h1:
+      group: hosts
+      exec:
+        - ip link set eth1 up
+        - ip address add 192.168.1.2/24 dev eth1
+        - ip route add 192.168.0.0/16 via 192.168.1.1
+    h2:
+      group: hosts
+      exec:
+        - ip link set eth1 up
+        - ip address add 192.168.2.2/24 dev eth1
+        - ip route add 192.168.0.0/16 via 192.168.2.1
+
+  links:
+    - endpoints: ["r1:eth-r2", "r2:eth-r1"]
+    - endpoints: ["r1:eth-h1", "h1:eth1"]
+    - endpoints: ["r2:eth-h2", "h2:eth1"]

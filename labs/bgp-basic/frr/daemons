@@ -1,0 +1,3 @@
+bgpd=yes
+
+bgpd_options="-d -F traditional --log file:/proc/1/fd/1"
