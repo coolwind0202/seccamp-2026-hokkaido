@@ -1,4 +1,4 @@
-name: bgp-1
+name: bgp-basic
 
 topology:
   defaults:
