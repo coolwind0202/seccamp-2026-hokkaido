@@ -1,6 +1,6 @@
 {
     "image":"ghcr.io/srl-labs/containerlab/devcontainer-dind-slim:sha-5ae5009",
-    "forwardPorts": [50080],
+    "forwardPorts": [8080],
     "customizations": {
         "codespaces": {
             "repositories": {
@@ -14,6 +14,12 @@
         }
     },
     "features": {
+        // For slidev run
         "ghcr.io/devcontainers/features/node:2": {}
-    }
+    },
+    "runArgs": [
+        // For suppressing FRR warnings caused by nofile
+        "--ulimit", "nofile=65535:65535"
+    ],
+    "postCreateCommand": "bash .devcontainer/postCreate.sh"
 }
