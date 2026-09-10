@@ -383,18 +383,20 @@ exit
 
 FRRouting などのソフトウェアルーターは、<br>
 Linux カーネルが保持する<Link to="routing-table">ルーティングテーブル</Link>を自動的に作るために<br>
-「RIB」（Routing Information Base）という経路情報リストを保持しています。
+**RIB**（Routing Information Base）という経路情報のデータベースを持ちます。
 
-ソフトウェアルーターは RIB をもとに「FIB」という転送ルールを作成し、<br>Linux カーネルのルーティングテーブルに反映します。
+ソフトウェアルーターは、RIB から最適な経路を抽出し、<br>Linux カーネルのルーティングテーブル（FIB）に反映します。
 
 ```mermaid
 graph LR
 subgraph FRRouting
-RIB@{ shape: database, label: 'RIB（収集した全経路）'}--> FIB[FIB（最適な転送方法）]
+経路情報 --> RIB@{ shape: database, label: "RIB
+（経路情報データベース）"}
 end
 
-FIB --反映--> Linux["
-ルーティングテーブル（Linux カーネル）"]
+RIB --抽出／反映--> Linux["
+ルーティングテーブル
+（Linux カーネル）"]
 ```
 
 ---
@@ -432,7 +434,7 @@ L>* 192.168.1.1/32 is directly connected, eth-h1, weight 1, 02:54:05 # h1へ
 ```
 
 - `C`, `L`: 直接接続しているホスト、サブネットへの経路を表します。
-- `*`: その経路が FIB に使われている<br>（= カーネルのルーティングテーブルに反映されている）ことを示します。
+- `*`: その経路が FIB に含まれている<br>（= カーネルのルーティングテーブルに反映されている）ことを示します。
 
 ---
 
