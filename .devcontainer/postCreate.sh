@@ -2,3 +2,6 @@ curl https://raw.githubusercontent.com/jesseduffield/lazydocker/master/scripts/i
 
 # suppress chpwd_recent_filehandler error
 mkdir -p /home/vscode/.local/share/zsh
+
+# pnpx -y playwright install
+pnpx -y playwright install chromium --with-deps
