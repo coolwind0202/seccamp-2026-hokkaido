@@ -64,40 +64,32 @@ routeAlias: routing
 
 ---
 
-# ルーティングテーブル
-『どのサブネット（後述）へのパケットをどの<Link to="nexthop">ネクストホップ</Link>に転送するか』<br>
-という条件をまとめたものを「ルーティングテーブル」とよびます。
-
-ルーターは、「ルーティングテーブル」をもとに<Link to="routing">ルーティング</Link>を行います。
-
----
-
-# IP アドレスとサブネット
-ルーティングテーブルでは、複数の<Link to="ip-address">IP アドレス</Link>を<br>「サブネット」でまとめて管理します。
-
-サブネットは、たとえば次のように表記します。
->192.168.0.0/16
-
-このサブネットは、`192.168.0.0`～`192.168.255.255`の範囲を表します。
-
----
-
-# 演習: ルーティングテーブルの読み方
-ルーターが、次のルーティングテーブルをもっているとします。
-
----
-
 # 演習: ルーティングテーブルの手動設定
 コンテナを用いた仮想ネットワーク「Containerlab」を使って、<br>ルーティングを手動設定してみましょう。
 
 手動設定したルーティングテーブルのことを、後述する自動設定と比較して、<br>「Static Routing」と呼びます。
 
-まずは、GitHub Codespaces を作成します。
+---
+layout: two-cols-header
+---
+
+### GitHub Codespaces の作成
+この演習では、GitHub Codespaces を使って演習環境を構築します。
+
+::left::
+1. GitHub にログインします。
+2.  [リンク](https://github.com/codespaces/new?hide_repo_select=true&repo=1351211162&skip_quickstart=true&ref=main)をクリックします。
+  Codespaces 作成画面 が開きます。
+3. 「Create codespace」（右図）を<br>クリックします。 
+
+::right::
+
+![](/basic-internet/create-codespace.png)
 
 ---
 
 ### ネットワーク構成の確認
-`bgp.yaml`ファイルを開いてください。
+`labs/static-routing/static-routing.clab.yml`ファイルを開きます。
 
 演習で使用する Docker コンテナが定義されています。
 
@@ -119,95 +111,235 @@ layout: two-cols-header
 されて**いません**。
 
 `r1`と`r2`にルーティング設定を行って、<br>
-パケットを適切に転送させる必要が<br>
+パケットを適切に中継させる必要が<br>
 あります。
 
 ::right::
 
-```plantuml
-skinparam defaultFontName Noto Sans CJK JP
+<<< @/snippets/static-routing.plantuml
 
-@startnwdiag
-nwdiag {
-  group {
-    color = "lightcyan";
-    r1;
-    h1;
-  }
-  group {
-    color = "seashell";
-    r2;
-    h2;
-  }
+---
+layout: two-cols-header
+routeAlias: task1
+---
 
-  network ネットワーク1 {
-    address = "192.168.1.0/24";
-    r1 [address = ".0"];
-    h1 [address = ".1"];
-  }
+### 課題1: パケットはどのように転送されるべきか
 
-  network ネットワーク2 {
-    address = "192.168.2.0/24";
-    h2 [address = ".1"];
-    r2 [address = ".0"];
-  }
+::left::
 
-  network ルーター間接続 {
-    width = full
-    address = "192.168.0.0/24";
-    r1 [address = ".1"];
-    r2 [address = ".2"];
-  }
-}
-@endnwdiag
+<v-clicks> 
+
+- **Q1**: `h1`から`h2`宛のパケットは、<br>どのような経路で転送されるべき<br>でしょうか。
+- **A1**: 図を順にたどれば、<br>`h1`→`r1`→`r2`→`h2`となります。
+
+</v-clicks>
+
+<br>
+
+<v-clicks>
+
+- **Q2**: `h2`から`h1`宛のパケットは、<br>どのような経路で転送されるべき<br>でしょうか。
+- **A2**: `h2`→`r2`→`r1`→`h1`ですね。
+
+</v-clicks>
+
+::right::
+
+<<< @/snippets/static-routing.plantuml
+
+
+---
+layout: two-cols-header
+routeAlias: redeploy
+---
+
+### ネットワークを作成する (1)
+
+::left::
+
+`static-routing.clab.yml`ファイルを<br>右クリックし、「Redeploy」を<br>クリックします。
+
+コンテナと仮想ネットワークの作成が<br>始まります。
+
+::right::
+
+![](/basic-internet/deploy.gif)
+
+---
+
+### ネットワークを作成する (2)
+
+ネットワークの作成が完了すると、画面右下に図の通知が表示されます。
+
+![](/basic-internet/deploy-success.png)
+
+---
+
+### コンテナのシェルを開く (1)
+
+コンテナ上でコマンドを実行するために、「シェル」を開く方法を説明します。
+
+まず Codespaces 画面で `Ctrl` `Shift` `@` を同時に押すと、<br>新規のターミナルが作成されます。
+
+次のコマンドで Docker を CLI で管理する `lazydocker` を起動します。
+
+```sh
+lazydocker
 ```
 
 ---
-layout: image-right
-image: ./images/containerlab-extension.png
----
-
-### Containerlab 画面を開く
-Codespace 画面の左側にある<br>
-Containerlab のボタンを<br>
-クリックしてください。
-
----
-
-### ネットワークを作成する
-
----
-layout: image-right
+layout: two-cols-header
 routeAlias: connect-to-h1
 ---
 
-### h1 コンテナに接続する
+### コンテナのシェルを開く (2)
 
-1. Containerlab 画面で、<br>
-  コンテナ名を右クリック<br>
-  します。
-2. 「Access」でホバーします。
-3. 「Attach Shells」を<br>
-   クリックします。
-4. ターミナルタブに、`h1`を<br>
-  操作するためのシェルが<br>
-  開かれます。
+::left::
+
+`lazydocker`の画面では、Containers<br> 
+という枠の中にコンテナの一覧が表示<br>されます。
+
+
+**💡例: `h1` に接続したいとき**
+1. `clab-bgp-basic-h1`をクリック。
+2. `Shift` `E` を同時に押します。<br>内部で `docker exec` が発行され、<br>シェルが開きます。
+
+シェルは`Ctrl` `D`で閉じられます。
+
+::right::
+
+![](/basic-internet/docker-exec.gif)
+
+---
+
+### ルーティングテーブル
+『どのサブネット（後述）へのパケットをどの<Link to="nexthop">ネクストホップ</Link>に転送するか』<br>
+という条件をまとめたものを「ルーティングテーブル」とよびます。
+
+ルーターは、「ルーティングテーブル」をもとに<Link to="routing">ルーティング</Link>を行います。
+
+---
+routeAlias: subnet
+---
+
+### サブネット
+ルーティングテーブルでは、複数の<Link to="ip-address">IP アドレス</Link>を「サブネット」で<br>まとめて管理します。
+
+サブネットは、たとえば次のように表記します。
+```
+192.168.0.0/16
+```
+
+32ビットあるIPアドレスのうち、16ビット（`/16`）まで<br>`192.168.0.0`と合致する IP アドレスがこのサブネットに含まれます。
+
+つまり、このサブネットは`192.168.0.0`～`192.168.255.255`を表します。
+
+---
+routeAlias: routing-table
+---
+
+### ルーティングテーブルを確認する (1)
+
+**前提条件**: <Link to="connect-to-h1">特定のコンテナのシェルを開いている</Link>
+
+次のコマンドで、コンテナで使われているルーティングテーブルを確認します。
+
+```sh
+ip route list
+```
+
+次のように出力されます。
+
+```sh
+default via 172.20.20.1 dev eth0 # 管理用ネットワーク 
+172.20.20.0/24 dev eth0 proto kernel scope link src 172.20.20.5 # 管理用
+192.168.0.0/16 via 192.168.1.1 dev eth1
+192.168.1.0/24 dev eth1 proto kernel scope link src 192.168.1.2 # 直接接続先
+```
+
+---
+routeAlias: routing-table-mean
+---
+
+### ルーティングテーブルを確認する (2)
+
+次の行を例に、読み方を説明します。
+
+```sh
+192.168.0.0/16 via 192.168.1.1 dev eth1
+```
+- サブネット`192.168.0.0/16`を宛先とするパケットを
+- ネクストホップ`192.168.1.1`に`eth1`インターフェースから転送する
+
+<br>
+
+💡たとえば、`192.168.2.2`を宛先として`h1`からパケットを送るとき、<br>
+ネクストホップ`192.168.1.1`に転送されるということですね。
+
+<br>
+
+**注意**:  `172.20.20.0/24`は管理用サブネットのため、今回は無視します。
 
 ---
 routeAlias: traceroute
 ---
 
-### h1 から h2 への経路を調べる
+### h1 から h2 への経路を調べる (1)
+
+**前提条件**: <Link to="connect-to-h1">h1またはh2コンテナのシェルを開いている</Link>
+
 `h1`と`h2`には、`mtr`というツールがインストールされています。
 
-<p><Link to="connect-to-h1">先ほど開いた h1 操作用のシェル</Link>で、次のように実行します。</p>
+特定の IP アドレスへの疎通有無や通信経路などを調べられます。
 
 ```sh
-mtr 192.168.2.1
+mtr 192.168.2.2
 ```
 
-パケットが転送された経路がリストアップされます。<br>
-デフォルトゲートウェイ（h1 から r1への転送）の設定は、講師が事前に行いました。
+`mtr` の実行を停止したいときは、`Q`キーを押してください。
+
+---
+
+### h1 から h2 への経路を調べる (2)
+
+**例**
+
+![](/basic-internet/mtr-0.png)
+
+- 💡 <Link to="routing-table-mean">ルーティングテーブル</Link>に従って、`192.168.2.2`（`h2`）宛のパケットが<br>
+`192.168.1.1`（`r1`）に転送されていることがわかります。
+
+- 😞 `h1`→`r1` までは転送されていますが、`r2`には転送されていません。<br>そのため`h2`にパケットが届きません。
+
+---
+routeAlias: task2
+---
+
+### 課題2: あるべき姿と現状の違いを調べる
+
+1. <Link to="traceroute">mtr</Link> を使って、現在のパケット転送の状態を調べましょう。
+2. <Link to="task1">課題1</Link>で考えた「あるべき姿」との違いを考えましょう。
+
+<br>
+
+<v-clicks depth="2">
+
+- **Q1**: `h1`から`h2`宛のパケット
+  - あるべき姿: `h1`→`r1`→`r2`→`h2`
+  - 現在: `h1`→`r1`まで （`r1`から`r2`への転送ができていない）
+- **Q2**: `h2`から`h1`宛のパケット
+  - あるべき姿: `h2`→`r2`→`r1`→`h1`
+  - 現在: `h2`→`r2`まで　（`r2`から`r1`への転送ができていない）
+
+</v-clicks>
+
+
+---
+layout: center
+---
+
+### ルーターの設定を変更して
+### あるべき姿とのずれを解消しよう
 
 ---
 routeAlias: operate-r1
@@ -215,10 +347,11 @@ routeAlias: operate-r1
 
 ### r1 に接続して FRRouting を操作する
 
-<p><Link to="connect-to-h1">h1 に接続したとき</Link>と同じ要領で、r1 操作用のシェルを開いてください。</p>
+**前提条件**: <Link to="connect-to-h1">r1 または r2 コンテナのシェルを開いている</Link>
 
 `vtysh`を実行して FRRouting コマンドを実行できるようにします。
-```sh [Linux コマンド受付状態で]
+```sh 
+# Linux コマンド受付状態で
 vtysh
 ```
 
@@ -235,39 +368,24 @@ routeAlias: exit-vtysh
 ### 補足: vtysh の終了
 
 vtysh を終了するには、`exit`コマンドを使用します。
-```sh [vtysh 実行状態で]
+```sh 
+# vtysh 実行状態で
 exit
 ```
 
 出力の行頭を確認してください。
-
-`/ #`などの場合、終了が成功し、Linuxコマンド受付状態になっています。
-
----
-
-### FRRouting の RIB を確認する
-
-⚠️**前提条件**
-
-r1 シェルを開いており、<Link to="operate-r1">FRRouting コマンド受付状態になっている</Link>。
-
-<br>
-
-FRRouting が保持している経路情報（Route Information Base, **RIB**）を<br>
-確認しましょう。
-```sh [vtysh 実行状態で]
-show ip route 
-```
+- `/ #`などの場合、終了が成功し、Linuxコマンド受付状態になっています。
+- それ以外の場合、終了に失敗しています。
 
 ---
 
 ### RIB とルーティングテーブル
 
-FRRouting の RIB は、ルーティングテーブルを計算するための元データです。
+FRRouting などのソフトウェアルーターは、<br>
+Linux カーネルが保持する<Link to="routing-table">ルーティングテーブル</Link>を自動的に作るために<br>
+「RIB」（Routing Information Base）という経路情報リストを保持しています。
 
-パケット転送で実際に使用されるルーティングテーブルは、Linuxカーネルが<br>保持します。
-
-FRRouting は、RIB をもとに「FIB」という転送ルールを計算し、<br>Linux カーネルのルーティングテーブルに反映します。
+ソフトウェアルーターは RIB をもとに「FIB」という転送ルールを作成し、<br>Linux カーネルのルーティングテーブルに反映します。
 
 ```mermaid
 graph LR
@@ -275,26 +393,46 @@ subgraph FRRouting
 RIB@{ shape: database, label: 'RIB（収集した全経路）'}--> FIB[FIB（最適な転送方法）]
 end
 
-FIB --反映--> Linux["Linux カーネル
-（ルーティングテーブル）"]
+FIB --反映--> Linux["
+ルーティングテーブル（Linux カーネル）"]
+```
+
+---
+routeAlias: show-rib
+---
+
+### FRRouting の RIB を確認する (1)
+
+️**前提条件**:
+- r1 または r2 のシェルを開いている。
+- かつ、<Link to="operate-r1">FRRouting コマンド受付状態になっている</Link>。
+
+
+FRRouting（ルーター）が保持している RIB（経路情報）を確認しましょう。
+```sh 
+# vtysh 実行状態で
+show ip route 
 ```
 
 ---
 
-### Linux カーネルのルーティングテーブルを確認する 
+### FRRouting の RIB を確認する (2)
 
-⚠️**前提条件**
-<ul>
-    <li>r1 のシェルを開いている（参考: <Link to="connect-to-h1">h1のシェルを開いたとき</Link>）。</li>
-    <li>Linux コマンド受付状態になっている（参考: <Link to="exit-vtysh">vtysh を終了</Link>）。</li>
-</ul>
+たとえば、次のように出力されます。
 
-<br>
-
-次のコマンドを実行すると、Linux カーネルに保持されている<br>ルーティングテーブルが表示されます。
-```sh [Linux コマンド受付状態で]
-ip route list
+```sh
+IPv4 unicast VRF default:
+K>* 0.0.0.0/0 [0/0] via 172.20.20.1, eth0, weight 1, 02:54:06
+C>* 10.0.0.0/24 is directly connected, eth-r2, weight 1, 02:54:05 # r2へ
+L>* 10.0.0.1/32 is directly connected, eth-r2, weight 1, 02:54:05 # r2へ
+C>* 172.20.20.0/24 is directly connected, eth0, weight 1, 02:54:06 # 管理用
+L>* 172.20.20.4/32 is directly connected, eth0, weight 1, 02:54:06 # 管理用
+C>* 192.168.1.0/24 is directly connected, eth-h1, weight 1, 02:54:05 # h1へ 
+L>* 192.168.1.1/32 is directly connected, eth-h1, weight 1, 02:54:05 # h1へ
 ```
+
+- `C`, `L`: 直接接続しているホスト、サブネットへの経路を表します。
+- `*`: その経路が FIB に使われている<br>（= カーネルのルーティングテーブルに反映されている）ことを示します。
 
 ---
 
@@ -302,62 +440,91 @@ ip route list
 
 `r1`と`r2`の設定は、それぞれ`r1.conf`と`r2.conf`ファイルにあります。
 ```sh [r1.conf]
-# ネットワークインターフェース eth1 に対する設定
-interface eth1
-    # インターフェースの説明
-    description "To h1"
-    # インターフェースの IP アドレス設定
-    ip address 192.168.1.0/24
+# ネットワークインターフェース eth-r2 に対する設定
+interface eth-r2
+    # インターフェースに IP アドレスを割り当てる
+    ip address 10.10.0.1/24
+
+# ...
 ```
 
 ---
 
-### Static Routing を設定する
-特定のサブネットを宛先とするパケットを、どのネクストホップに転送させるか設定したいとします。
+### 課題3: ネクストホップを設定する (1)
 
-`r1.conf`などの設定ファイルに、次の形式の行を加えます。
+💡<Link to="task2">課題2</Link>でみた、`h2`宛のパケットを`r1`が`r2`しない問題を解決します。
+
+そのためには `h2`宛パケットのネクストホップを`r2`にする必要があります。
+
+<br>
+
+ネクストホップを設定するには、`r1.conf`などの設定ファイルに、次の形式の行を加えます。
 
 ```sh [r1.conf]
 ip route サブネット ネクストホップのIPアドレス
 ```
 
 ---
-routeAlias: static-routing-example
+routeAlias: task3
 ---
 
-### Static Routing を設定する（例）
+### 課題3: ネクストホップを設定する (2)
 
-r1 は、サブネット`192.168.2.0`（ネットワーク2）に対するパケットを、`192.168.0.2`（r2）に転送する必要があります。
+サブネット`192.168.2.0/24`（ネットワーク2）宛のパケットを、<br>
+ネクストホップ`10.0.0.2`（`r2`）に転送する場合、次のようにします。
 
-この場合は、次のように記述します。
-```sh [r1.conf]
-ip route 192.168.2.0/24 192.168.0.2
+```sh
+ip route 192.168.2.0/24 10.0.0.2
 ```
-
----
-
-### 課題1: h1 のパケット転送経路の確認
-
-ここまでの手順で、r1 に対する設定は完了しているはずです。
-<p>
-<Link to="traceroute">mtr の使用法</Link>を参考に、h1が送信したパケットがどこまで到達しているかを確認してください。
-</p>
 
 <br>
 
-### 課題2: r2 への設定
+💡同様に、`r2`が`h1`宛のパケットを`r1`に転送しない問題を解決しましょう！
 
-<p>
-<Link to="static-routing-example">r1 の設定</Link>を参考に、r2 にも設定を行ってください。
-</p>
+⚠️Hint: `r2`の設定ファイルは`r2.conf`です。
 
-- Hint: どのサブネットを宛先とするパケットを、どのネクストホップに転送すればよいでしょうか？
+<v-click>
+
+```sh
+ip route 192.168.1.0/24 10.0.0.1
+```
+</v-click>
 
 ---
 
-### 補足
+### 課題4: h1 と h2 の疎通を確認する
 
-- 課題が終わったら、FRRouting のその他の機能を触ってみてください。
+1. <Link to="redeploy">Redeploy</Link>を実行してコンテナを作り直します。<br>これにより、設定ファイルの変更が反映されます。
+2. `h1`から`h2`に<Link to="traceroute">mtr</Link>を実行します。<br>`192.168.2.2`が表示され、`Loss`は0.0%になっていることを確認します。
+   ![](/basic-internet/mtr-ok.png)
+3. `h2`から`h1`にも`mtr`を実行します。<br>`192.168.1.2`が表示されていれば通信に成功しています。
+
+---
+
+### 追加課題: RIB の変化を確認する
+
+余裕があれば、`r1`と`r2`の<Link to="show-rib">RIBを確認</Link>してみましょう。
+
+```diff
+# show ip route を r1 で実行した場合
+  ...
+  C>* 192.168.1.0/24 is directly connected, eth-h1, weight 1, 00:11:11
+  L>* 192.168.1.1/32 is directly connected, eth-h1, weight 1, 00:11:11
++ S>* 192.168.2.0/24 [1/0] via 10.0.0.2, eth-r2, weight 1, 00:11:11
+```
+
+<br>
+
+💡`S`と付記された経路が増えています！
+
+`192.168.2.0/24`宛のパケットを`10.0.0.2`に転送させる経路です。<br>
+→　<Link to="task3">課題3</Link>で追加した経路ですね。
+
+---
+
+### 追加課題: FRRouting の機能を調べる 
+
+- 課題が終わったら、FRRouting のその他の機能を調べてみてください。
   - https://docs.frrouting.org/en/latest/basics.html
 
   - FRRouting コマンドは、Cisco IOS に似た文法です。
