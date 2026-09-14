@@ -1,6 +1,6 @@
 {
     "image":"ghcr.io/srl-labs/containerlab/devcontainer-dind-slim:sha-5ae5009",
-    "forwardPorts": [8080],
+    "forwardPorts": [8080, 3030],
     "customizations": {
         "codespaces": {
             "repositories": {
