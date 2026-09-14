@@ -774,4 +774,86 @@ BGP Community の用途は、**基本的には**各 AS で規定されていま�
 
 # 演習: BGP Community 
 
+この演習では、次のことを学びます。
+- BGP Community を付加・削除する方法
+- Community に応じた経路制御の方法
+
+`labs/bgp-community/bgp-community.clab.yml`を開いてください。
+
+---
+
+### ネットワーク構成の確認 (1)
+
+この演習で使うネットワークは、次の3つの AS に分かれます。
+
+```plantuml
+@startuml
+left to right direction
+cloud AS65001 {
+  node r1
+  node h1
+}
+
+cloud AS65002 {
+  node r2
+  node h2
+}
+
+cloud AS65003 {
+  node r3
+  node h3
+}
+
+r1 --- r2 : 10.0.1.0/24
+r2 --- r3 : 10.0.2.0/24
+
+h1 --- r1 : 192.168.1.0/24
+h2 --- r2 : 192.168.2.0/24
+h3 --- r3 : 192.168.3.0/24
+
+@enduml
+```
+
+---
+
+### ネットワーク構成の確認 (2)
+
+
+
+---
+
+### 送信する経路に BGP Community を付加する
+
+Community を付けて経路情報を送ることを考えます。
+
+
+
+---
+
+### 受信した経路に BGP Community を付加する
+
+
+---
+
+### BGP Community が伝搬することを確認する
+
+---
+
+### 受信した経路の BGP Community を削除する
+
+---
+
+### 削除した BGP Community が伝搬しないことを確認する
+
+
+---
+
+### Community 付の受信経路を破棄する
+
+---
+
+### Community 付の受信経路のネクストホップを指定する
+
+---
+
 
