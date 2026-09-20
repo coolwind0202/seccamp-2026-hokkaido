@@ -1,0 +1,27 @@
+@startuml
+left to right direction
+cloud AS65001 {
+  node r1
+  node h1
+}
+
+cloud AS65002 {
+  node r21
+  node r22
+}
+
+cloud AS65003 {
+  node h3
+  node r3
+}
+
+r1 --- r21 : 10.0.1.0/24
+r22 --- r3 : 10.0.2.0/24
+
+h1 --- r1 : 192.168.1.0/24
+r21 --- r22 : 192.168.2.0/24
+r3 --- h3 : 192.168.3.0/24
+
+@enduml
+
+

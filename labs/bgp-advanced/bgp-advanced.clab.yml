@@ -1,0 +1,49 @@
+name: bgp-advanced
+mgmt:
+  skip-when-unused: true
+
+topology:
+  defaults:
+    kind: linux
+    network-mode: none
+
+  groups:
+    routers:
+      image: quay.io/frrouting/frr:10.5.1
+      binds:
+        - ./frr/__clabNodeName__.conf:/etc/frr/frr.conf
+        - ./frr/daemons:/etc/frr/daemons
+        - ./frr/vtysh.conf:/etc/frr/vtysh.conf
+    hosts:
+      image: ghcr.io/nicolaka/netshoot:v0.16
+
+  nodes:
+    r1:
+      group: routers
+    r21:
+      group: routers
+    r22:
+      group: routers
+    r3:
+      group: routers
+    h1:
+      group: hosts
+      exec:
+        - ip link set eth-r1 up
+        - ip address add 192.168.1.2/24 dev eth-r1
+        - ip route add default via 192.168.1.1
+    h3:
+      group: hosts
+      exec:
+        - ip link set eth-r3 up
+        - ip address add 192.168.3.2/24 dev eth-r3
+        - ip route add default via 192.168.3.1
+
+
+  links:
+    - endpoints: ["r1:eth-r21", "r21:eth-r1"]
+    - endpoints: ["r21:eth-r22", "r22:eth-r21"]
+    - endpoints: ["r22:eth-r3", "r3:eth-r22"]
+    - endpoints: ["r1:eth-h1", "h1:eth-r1"]
+    - endpoints: ["r3:eth-h3", "h3:eth-r3"]
+

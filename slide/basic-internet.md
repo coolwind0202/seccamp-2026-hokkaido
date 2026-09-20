@@ -632,11 +632,11 @@ BGP では、ルーターは自身のAS番号を通信相手に知らせます�
 # すでにある IP アドレス設定
 interface ...
 
-# BGP 設定用ブロック 
+# BGP プロセスを動作させる 
 router bgp 65001
   # BGP を動作させるインターフェースの IP アドレス
   bgp router-id 10.0.0.1
-  # Import Policy の無効化（非推奨！本演習のみの設定）
+  # Import Policy が不十分でも動作させる【非推奨】
   no bgp ebgp-requires-policy
 ```
 
@@ -709,7 +709,223 @@ Containerlab では、Edgeshark を使ったパケットキャプチャが可能
 layout: section
 ---
 
-# 経路フィルタと BGP Community
+# BGP の高度なトピック
+## iBGP / 経路情報の操作
+
+---
+
+# 演習: iBGPの設定
+
+`labs/bgp-advanced/bgp-advanced.clab.yml`を開いてください。
+
+このネットワークの構成を図に示します。
+
+<<< @/snippets/bgp-advanced.plantuml
+
+
+<br>
+
+AS65002には`r21`と`r22`という2つのルーターがあります。
+
+`r21`と`r22`に同一AS内でネイバーを確立する「iBGP」を設定しましょう。<br>
+これにより、図中の全ルーターがBGPで接続します。
+
+---
+
+### ネットワーク構成の確認
+
+1. `bgp-advanced.clab.yml`を<Link to="redeploy">redeploy</Link>してください。
+2. `h1`から`h3`に<Link to="traceroute">mtr</Link>し、`r21`までしか到達しないことを確認してください。
+3. `r21`の
+
+---
+
+### `r21`と`r22`にネイバーを追加する
+
+まず、`r21`と`r22`が互いをネイバーとする設定が必要です。
+
+`r21`にとっての`r22`のIPアドレスは`192.168.2.1`であることに注意すれば、<br>
+次のように設定することでネイバーを確立できます。
+
+```sh
+  neighbor 10.0.1.1 remote-as 65001 # すでにある設定
+
+  # ここから追記
+  neighbor 192.168.2.2 remote-as 65002 # r22をAS65002とする
+```
+
+---
+
+### `r1`の転送エラーを調べる (1)
+
+Redeploy し、`h1`から`h3`に<Link to="traceroute">mtr</Link>してください。<br>
+次のように表示されます。
+
+<v-click>
+
+```
+1. (no route to host)
+```
+
+</v-click>
+
+<v-click>
+
+また、`h1`から`ping 192.168.3.2`と実行すると、<br>
+`r1`（192.168.1.1）からエラーが返されていることがわかります。
+
+</v-click>
+
+<v-click>
+
+```sh
+PING 192.168.3.2 (192.168.3.2) 56(84) bytes of data.
+From 192.168.1.1 icmp_seq=1 Destination Net Unreachable
+```
+
+</v-click>
+
+---
+
+### `r1`の転送エラーを調べる (2)
+
+`r1`で起こっている問題は、`192.168.3.2`が`r1`のルーティングテーブル上に<br>
+存在しないことが原因です。
+
+実際に<Link to="routing-table">ルーティングテーブルを確認</Link>してください。
+
+<v-click>
+
+```sh
+10.0.1.0/24 dev eth-r21 proto kernel scope link src 10.0.1.1 # r21 へ
+192.168.1.0/24 dev eth-h1 proto kernel scope link src 192.168.1.1 # h1 へ 
+192.168.2.0/24 nhid 10 via 10.0.1.2 dev eth-r21 proto bgp metric 20 # AS65002
+```
+
+</v-click>
+
+---
+
+### `r21`が受信したAS65003 への経路 (1)
+
+BGP が想定どおり動作していれば、`r1`は`192.168.3.0/24`（AS65003）への<br>
+経路を受信できているはずです。
+
+問題の原因は、`r21`が`r1`に、AS65003 への経路を送信していないからです。<br>
+`r21`で<Link to="operate-r1">vtysh</Link>を起動して、`show bgp all`を実行してください。
+
+```sh
+     Network          Next Hop            Metric LocPrf Weight Path
+ *>  192.168.1.0/24   10.0.1.1                 0             0 65001 i
+ *>  192.168.2.0/24   0.0.0.0                  0         32768 i
+ * i                  192.168.2.2              0    100      0 i
+   i 192.168.3.0/24   10.0.2.3                 0    100      0 65003 i
+```
+
+最左列をみると`192.168.3.0/24`が`*`（valid）として扱われていません。
+
+---
+
+### `r21`が受信したAS65003 への経路 (2)
+
+なぜ`192.168.3.0/24`への経路は valid として認識されなかったのでしょうか？
+
+その理由は、ネクストホップの`10.0.2.3`が`r21`のルーティングテーブルには<br>
+存在しなかったからです。
+
+```mermaid
+flowchart RL
+
+r3 -- ネクストホップを\n自身として広報 --> r22
+r22 -- ネクストホップが\nr3 のまま広報 --> r21
+
+```
+
+`r21`は`r3`に**直接接続していない**ので、`192.168.3.0/24`を転送できません。<br>
+そのため、`r21`は、受信した経路情報を invalid として扱いました。
+
+---
+
+### 問題への解決策
+
+`r21`が`10.0.2.3`宛の経路を持たない問題を解消するためには、<br>
+次の2つの解決策が考えられます。
+
+- `r21`が`10.0.2.0/24`宛のパケットを`r22`に転送するようにする<br>
+  （Static Routingによる解決）
+- `r21`の`r22`に関する設定に`next-hop-self`を加える<br>
+  （BGPの機能による解決）
+
+今回は、後者の`next-hop-self`を用いて解決します。
+
+---
+
+### `next-hop-self`の効果
+
+`next-hop-self`を設定すると、`r22`は、受信経路のネクストホップを<br>
+自身に書き換えて`r21`に広報します。
+
+```mermaid
+flowchart RL
+
+r3 -- ネクストホップを\n自身として広報 --> r22
+r22 -- ネクストホップを\n自身として広報 --> r21
+```
+
+その結果、`r21`から`192.168.3.0/24`へのネクストホップは`r22`となります。
+
+`r22`は`r21`のルーティングテーブル上にあるので、問題は解決します。
+
+---
+
+### `next-hop-self`を設定する
+
+`r21`について、`r22`を`next-hop-self`対象のネイバーに設定します。
+
+```sh
+  neighbor 192.168.2.2 remote-as 65002 # すでにある設定
+
+  # ここから追記
+  neighbor 192.168.2.2 next-hop-self
+```
+
+`r22`も、`r21`を`next-hop-self`の対象とするよう設定してください。
+
+---
+
+### 結果を確認する
+
+1. `h1`から`h3`に疎通することを、<Link to="traceroute">mtr</Link>で確認してください。
+2. `h3`宛のパケットを`r21`が`r22`に転送することを、<br>
+   ルーティングテーブルで確認してください。
+
+<br>
+
+<v-click>
+
+#### ルーティングテーブルの確認手順
+1. <Link to="connect-to-h1">lazydocker</Link>などで r21 のシェルを開きます。
+2. <Link to="routing-table">ルーティングテーブル</Link>を確認します。
+3. `192.168.3.2`へのパケットは、次のルールで`r21`から`r22`に転送されます。
+```sh
+192.168.3.0/24 nhid 12 via 192.168.2.2 dev eth-r22 proto bgp metric 20
+```
+
+</v-click>
+
+---
+
+# 経路情報の操作
+
+FRRouting では、送受信する経路情報にさまざまな操作を行えます。
+- 経路フィルタ
+  - 受信経路のうち、条件を満たさないものを破棄する
+- 経路情報の変更
+  - 受信した経路のネクストホップを変更する
+
+本セクションでは、その重要性と方法を説明します。
+
+また、操作を行う条件の定義に有用な BGP Community にも触れます。
 
 ---
 
@@ -726,9 +942,151 @@ layout: section
 
 ---
 
-# 演習: 経路フィルタを設定する
+# 演習: 経路フィルタを定義する
+
+iBGP の設定から引き続き、経路フィルタの設定を追加します。
+
+必要最低限の経路だけを送受信できるようにしましょう。
 
 ---
+
+### Import Policy の検査を有効化する
+
+現在は`bgp-basic`のときと同様、経路フィルタを定義していません。
+
+経路フィルタのような受信経路に対するルールを Import Policy とよび、<br>
+`bgp-basic`では Import Policy が不十分でも動作するようにしていました。
+
+<br>
+
+`r1`と`r2`と`r3`の設定から、次の行を**削除**してください。
+
+```
+no bgp ebgp-requires-policy
+```
+
+---
+
+### 動作しないことを確認する
+
+Import Policy の検査を有効化したことにより、フィルタが適切に<br>
+設定されていない経路は、セキュリティの問題から RIB に取り込まれません。
+
+ルーティングテーブルにも反映されず、疎通しなくなることを確認しましょう。
+
+1. `bgp-advanced.clab.yml`を<Link to="redeploy">redeploy</Link>してください。
+2. `h1`から`h3`に疎通しないことを確認してください。
+3. `r1`のシェルを開き、ルーティングテーブルに`192.168.3.0/24`へのルールが<br>
+   ないことを確認してください。
+
+---
+layout: two-cols-header
+---
+
+### Import Policy の警告を確認する
+
+経路情報のやり取りが行われていないわけではなく、<br>
+Import Policy の検査により受信経路が無視されたことを確認します。
+
+::left::
+
+1. `lazydocker`を起動します。
+2. `r1`を選択し、**シェルは開かず**<br>
+   `Enter` を押してください。
+3. 画面右側をスクロールして、<br>
+   FRRouting の出力を確認します。
+
+::right::
+
+---
+
+### 必要なフィルタを整理する
+
+まずは、望んでいる挙動を整理しましょう。
+
+<<< @/snippets/filter.mermaid
+
+たとえば`r1`には、次の送受信を許可するフィルタが必要です。
+- `r21`（`10.0.1.2`）に`192.168.1.0/24`への経路を送信する
+- `r21`から`192.168.2.0/24`と`192.168.3.0/24`への経路を受信する
+
+---
+
+### `prefix-list`を定義する (1)
+
+フィルタの対象となる IP Prefix を`prefix-list`として定義します。<br>
+構文は次のとおりです。
+
+```sh
+ip prefix-list [prefix-listの名前] seq [優先度] permit [Prefix]
+```
+
+一つの`prefix-list`に対して、複数の Prefix を含めることができます。
+
+特定の IP アドレスがその`prefix-list`に含まれるかどうかは、優先度が高い<br>
+Prefix から順に判断されます。
+
+---
+
+### `prefix-list`を定義する (2)
+
+受信できる Prefix を`PL-BGP-IN`、送信できる Prefix を`PL-BGP-OUT`とします。<br>
+`r1`の場合は次のように書けます。
+
+```sh
+ip prefix-list PL-BGP-IN seq 10 permit 192.168.2.0/24
+ip prefix-list PL-BGP-IN seq 20 permit 192.168.3.0/24
+
+ip prefix-list PL-BGP-OUT seq 10 permit 192.168.1.0/24
+```
+
+ほかのルーターも同様に設定してください。
+
+---
+
+### `route-map`を定義する
+
+経路フィルタを`route-map`で定義します。<br>
+フィルタの条件として、先ほど定義した`prefix-list`を使用します。
+
+受信用のフィルタを`RM-BGP-IN`、送信用のフィルタを`RM-BGP-OUT`とします。<br>
+
+```sh
+# 条件に該当する経路情報を許可するフィルタ
+route-map RM-BGP-IN permit 10
+  # どのような経路情報に対して許可操作を行うか
+  # 今回は PL-BGP-IN prefix-list に該当する経路に対して
+  match ip address prefix-list PL-BGP-IN
+
+route-map RM-BGP-OUT permit 10
+  match ip address prefix-list PL-BGP-OUT
+```
+
+---
+
+### `route-map`を適用する
+
+定義した`route-map`を、異なるASのネイバーに対して適用しましょう。
+
+`r1`の場合は、`r21`に対して`route-map`を適用する必要があります。
+
+```sh
+  # r21 から受信した経路に RM-BGP-IN を適用する
+  neighbor 10.0.1.2 route-map RM-BGP-IN in
+  # r21 に送信する経路に RM-BGP-OUT を適用する
+  neighbor 10.0.1.2 route-map RM-BGP-OUT out
+```
+
+---
+
+### 疎通を確認する
+
+⭐<Link to="traceroute">mtr</Link>を使って、`h1`から`h3`に疎通していることを確認してください。
+
+![](/basic-internet/mtr-filter-ok.png)
+
+---
+
 
 # BGP Community で柔軟に経路制御する
 
@@ -745,7 +1103,7 @@ Communityは4バイトで、`12345:12345`のように2バイトずつ表記し�
 
 # BGP Community の運用 
 
-BGP Community の用途は、**基本的には**各 AS で規定されています。
+BGP Community の用途は、**基本的には**各 AS が独自に規定しています。
 
 **例**: NTT Global IP Network（AS2914）
 - NTT が世界各国に提供している IP 通信サービスです。
@@ -764,7 +1122,7 @@ BGP Community の用途は、**基本的には**各 AS で規定されていま�
 
 <br>
 
-**例**
+#### **例**
 - NO_ADVERTISE（`65535:65282`）
   - 経路を他のネイバーに広報させない
 - **BLACKHOLE**（`65535:666`）
@@ -785,35 +1143,6 @@ BGP Community の用途は、**基本的には**各 AS で規定されていま�
 ### ネットワーク構成の確認 (1)
 
 この演習で使うネットワークは、次の3つの AS に分かれます。
-
-```plantuml
-@startuml
-left to right direction
-cloud AS65001 {
-  node r1
-  node h1
-}
-
-cloud AS65002 {
-  node r2
-  node h2
-}
-
-cloud AS65003 {
-  node r3
-  node h3
-}
-
-r1 --- r2 : 10.0.1.0/24
-r2 --- r3 : 10.0.2.0/24
-
-h1 --- r1 : 192.168.1.0/24
-h2 --- r2 : 192.168.2.0/24
-h3 --- r3 : 192.168.3.0/24
-
-@enduml
-```
-
 ---
 
 ### ネットワーク構成の確認 (2)
