@@ -1087,7 +1087,6 @@ route-map RM-BGP-OUT permit 10
 
 ---
 
-
 # BGP Community で柔軟に経路制御する
 
 経路フィルタなどの制御を柔軟に行うために、<br>
@@ -1112,13 +1111,28 @@ BGP Community の用途は、**基本的には**各 AS が独自に規定して�
 
 ---
 
+# BGP Community の広報範囲
+
+BGP Community の用途は、自ASと顧客に対して定めるポリシーです。
+
+自ASのポリシーを上流、**とくにインターネット**に漏出することは不適切です。
+
+上流と約束していない **BGP Community はAS境界で削除する**ことが重要です。
+
+```mermaid
+flowchart RL
+自AS -- 自ASの\nBGP Community は\n削除して広報 --> インターネット
+下流 -- BGP Community を\n付けて広報 --> 自AS
+```
+
+---
+
 # Well-known Community
 
-`1:0`～`65534:65535`のCommunityは、自由に用途を決められます。
+`65535:0`～`65535:65535`の Community は用途が定められています。
 
-いっぽう、`65535:0`～`65535:65535`は、あらかじめ用途が定められています。
-
-このような Community を「Well-known Community」といいます。
+このような Community を「Well-known Community」といい、<br>
+上流やインターネットに広報することが想定されています。
 
 <br>
 
@@ -1132,57 +1146,144 @@ BGP Community の用途は、**基本的には**各 AS が独自に規定して�
 
 # 演習: BGP Community 
 
-この演習では、次のことを学びます。
-- BGP Community を付加・削除する方法
-- Community に応じた経路制御の方法
+`r3`から広報する経路に BGP Community を付加して、挙動を確認しましょう。<br>
 
-`labs/bgp-community/bgp-community.clab.yml`を開いてください。
+演習には`bgp-advanced`を引き続き使用しますが、次のように役割を決めます。
+- `AS65001`: 上流（`AS65002`のCommunity運用を考慮しない）
+- `AS65003`: 下流（`AS65002`のポリシーに従う）
 
----
+<br>
 
-### ネットワーク構成の確認 (1)
-
-この演習で使うネットワークは、次の3つの AS に分かれます。
----
-
-### ネットワーク構成の確認 (2)
-
-
+```mermaid
+flowchart RL
+AS65002["AS65002\nBGP Communityを\nもとに経路制御"]
+AS65002 -- BGP Community を\n削除して広報 --> AS650001["AS65001\n上流"]
+AS65003["AS65003\n下流"] -- BGP Community を\n付加して広報 --> AS65002
+```
 
 ---
 
-### 送信する経路に BGP Community を付加する
+### `r3` からの広報経路に BGP Community を付加する
 
-Community を付けて経路情報を送ることを考えます。
+`route-map`を使って、経路情報に BGP Community を付加できます。
 
+`r3`から広報する経路に`65002:1`を付加したいので、次の設定を追加します。
 
-
----
-
-### 受信した経路に BGP Community を付加する
-
-
----
-
-### BGP Community が伝搬することを確認する
+```sh[r3.conf]{3}
+route-map RM-BGP-OUT permit 10
+  match ip address prefix-list PL-BGP-OUT
+  set community 65002:1
+```
 
 ---
 
-### 受信した経路の BGP Community を削除する
+### BGP Community に応じて経路の属性値を変更する
+
+`r22`では、BGP Community `65002:1`が付加された受信経路の<br>
+`local-preference`値を変更してみましょう。
+
+
+```sh[r22.conf]
+route-map RM-BGP-IN permit 5
+  match community 65002:1
+  set local-preference 50
+```
+
+`local-preference`の役割について、本演習では詳しくふれません。
+
+Prefix に複数経路があるとき、どの経路を優先するのかを定める属性値です。
 
 ---
 
-### 削除した BGP Community が伝搬しないことを確認する
+### 経路の属性値が操作されていることを確認する
 
+`r22`で vtysh を開き、`show bgp all`を実行します。
+
+<v-click>
+
+`LocPrf`列から、`route-map`で設定した`50`が反映されたことがわかります。
+
+```sh{5}
+     Network          Next Hop            Metric LocPrf Weight Path
+ *>i 192.168.1.0/24   192.168.2.1              0    100      0 65001 i
+ *>  192.168.2.0/24   0.0.0.0                  0         32768 i
+ * i                  192.168.2.1              0    100      0 i
+ *>  192.168.3.0/24   10.0.2.3                 0     50      0 65003 i
+```
+
+</v-click>
 
 ---
 
-### Community 付の受信経路を破棄する
+### `r1` にも Community が伝播していることを確認する
+
+FRRouting では、デフォルトでネイバーに BGP Community を送信します。
+
+`r1`で vtysh を開いて、次のコマンドを実行してください。
+```sh
+show bgp all detail-routes
+```
+
+<v-click>
+
+`192.168.3.0/24`への経路の`65002:1`を`r1`が認識していることがわかります。
+
+```sh{1,5}
+BGP routing table entry for 192.168.3.0/24, version 3
+Paths: (1 available, best #1, table default)
+  65002 65003
+    10.0.1.2 from 10.0.1.2 (10.0.1.2)
+      Community: 65002:1
+```
+
+</v-click>
 
 ---
 
-### Community 付の受信経路のネクストホップを指定する
+### `r21` に Community `65002:1` を削除させる
+
+今回は AS65001 に上流という役割を与えているので、<br>
+Community `65002:1` が `r1` に伝播しているのは望ましくありません。
+
+⭐送信する経路情報から `65002:1`を削除するよう`r21`に設定しましょう。
+
+```sh[r21.conf]{4}
+route-map RM-BGP-OUT permit 10
+  match ip address prefix-list PL-BGP-OUT
+
+  set comm-list MY-COMMUNITY delete
+```
 
 ---
 
+### Community が伝播しなくなったことを確認する
 
+`r1` で vtysh を開いて、経路情報を確認します。
+```sh
+show bgp all detail-routes
+```
+
+Community `65002:1` が伝播していないことを確認できます。
+
+```sh
+BGP routing table entry for 192.168.3.0/24, version 3
+Paths: (1 available, best #1, table default)
+  Not advertised to any peer
+  65002 65003
+    10.0.1.2 from 10.0.1.2 (10.0.1.2)
+      Origin IGP, valid, external, best (First path received)
+      Last update: Mon Sep 21 03:36:25 2026
+```
+
+---
+
+# まとめ
+
+- インターネットに通信するとき、パケットに**宛先IP アドレス**を乗せて送る
+  - 送ったパケットは、世界中のルーターを伝って届けられる
+- インターネットは AS どうしが BGP ルーターで接続することでできている
+  - インターネットでは経路情報を **BGP で自動的に交換**する
+  - 経路情報は **Static Routing** で設定することもできる
+- AS 間で送受信する経路情報には適切なフィルタが必要
+- **BGP Community** は経路操作の条件に使えるが用途は AS ごとのポリシー
+  - **Well-known Community** は用途が世界的に統一されている
