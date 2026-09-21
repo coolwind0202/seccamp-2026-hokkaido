@@ -1,6 +1,4 @@
 name: bgp-advanced
-mgmt:
-  skip-when-unused: true
 
 topology:
   defaults:
