@@ -621,28 +621,50 @@ layout: two-cols-header
 
 ---
 
-### 課題1: AS番号の設定 (1)
+### AS番号の通知について
 
-BGP では、ルーターは自身のAS番号を通信相手に知らせます。<br>
+BGP において、ルーターはセッション確立時に自身のAS番号を通信相手に<br>
+知らせます。
+
+
+```mermaid
+flowchart LR
+
+subgraph AS65001
+  h1 --- r1["r1\n10.0.0.1"]
+end
+
+subgraph AS65002
+  r2["r2\n10.0.0.2"] --- h2
+end
+
+r1 -- わたしは AS65001 です --> r2
+r2 -- わたしは AS65002 です --> r1
+```
+
+
 今回は、`r1`がAS65001、`r2`がAS65002にそれぞれ含まれているとします。
+
+---
+
+### 課題1: AS番号を設定する (1)
 
 `r1.conf`に次のように追記します。
 
-```sh
-# すでにある IP アドレス設定
+```sh[r1.conf]{3-}
 interface ...
 
-# BGP プロセスを動作させる 
+# AS650001 として BGP プロセスを動作させる 
 router bgp 65001
   # BGP を動作させるインターフェースの IP アドレス
   bgp router-id 10.0.0.1
-  # Import Policy が不十分でも動作させる【非推奨】
+  # Import Policy が不十分でも動作させる（後で削除する）
   no bgp ebgp-requires-policy
 ```
 
 ---
 
-### 課題1: AS番号の設定 (2)
+### 課題1: AS番号を設定する (2)
 
 次のことに注意して、`r2.conf`にも設定を追加します。
 - `r2`のAS番号は65002
@@ -652,23 +674,28 @@ router bgp 65001
 
 ---
 
-### 課題2: ネイバーの設定
+### 課題2: ネイバーの IP アドレスを設定する
 
-BGP の通信を確立するには、ネイバーの IP アドレスの登録が必要です。<br>
-※ BGP の通信相手のことをネイバー（ピア）と呼びます。
+BGP の通信相手のことを「ネイバー」と呼びます。
 
-```sh [r1.conf]
-  bgp router-id 10.0.0.1 # すでにある設定
-  neighbor 10.0.0.2 remote-as 65002 # 追記
+BGP の通信を確立するには、ネイバーの IP アドレスが必要です。
+
+```sh[r1.conf]{3}
+  no bgp ebgp-requires-policy
+
+  neighbor 10.0.0.2 remote-as 65002
 ```
 
 `r2`にも実装し、`sample/r2.conf`を参照して正誤を確認してください。
 
 ---
 
-### 追加課題: BGP セッション確立のようすを調べる
+### BGP セッションが確立するようすを観察する
 
-Containerlab では、Edgeshark を使ったパケットキャプチャが可能です。
+ここまでの設定で、`r1`と`r2`がBGPセッションを確立できるようになりました。
+
+Containerlab では、Edgeshark を使ったパケットキャプチャが可能です。<br>
+BGP でどのようなメッセージがやり取りされているのかを観察しましょう。
 
 ---
 
@@ -676,10 +703,9 @@ Containerlab では、Edgeshark を使ったパケットキャプチャが可能
 
 ネイバーに広報（交換）するIP Prefix（サブネット）を設定します。
 
-```sh [r1.conf]
-  neighbor 10.0.0.2 remote-as 65002 # すにである設定
+```sh[r1.conf]{3-}
+  neighbor 10.0.0.2 remote-as 65002
 
-  # ここから追記
   address-family ipv4 unicast
     # 広報する Prefix の指定
     network 192.168.1.0/24
@@ -699,11 +725,56 @@ Containerlab では、Edgeshark を使ったパケットキャプチャが可能
 
 ---
 
-### 追加課題: 経路広報のようすを調べる
+### 課題5: ルーティングテーブルを確認する
+
+`r1`のルーティングテーブルの`192.168.2.0/24`の行を確認してください。
+
+<v-click>
+
+```sh{3}
+10.0.0.0/24 dev eth-r2 proto kernel scope link src 10.0.0.1
+192.168.1.0/24 dev eth-h1 proto kernel scope link src 192.168.1.1
+192.168.2.0/24 nhid 10 via 10.0.0.2 dev eth-r2 proto bgp metric 20
+```
+
+`r1`は`192.168.2.0/24`宛のパケットを`10.0.0.2`に転送するようです。
+
+その結果、パケットは`r2`に届き、`h2`に転送されることがわかります。
+</v-click>
 
 ---
 
-### 追加課題: 受信した経路が RIB に登録されているか調べる
+### 経路広報のようすを調べる
+
+Edgeshark を使って、`r1`がどのように`r2`に広報しているのか確認しましょう。
+
+---
+
+### ルーティングプロトコル と RIB 
+
+`r1`の vtysh を開き、`show ip route`で RIB を表示してください。
+<v-click>
+
+```sh{2}
+L>* 192.168.1.1/32 is directly connected, eth-h1, weight 1, 00:17:09
+B>* 192.168.2.0/24 [20/0] via 10.0.0.2, eth-r2, weight 1, 00:17:07
+```
+
+RIBは、ルーティングプロトコルで集めた経路情報を集約したものです。<br>
+BGP で集めた詳細な経路情報は、`show bgp all`で表示できます。
+
+</v-click>
+
+<v-click>
+
+```sh
+     Network          Next Hop  ...  Path
+ *>  192.168.1.0/24   0.0.0.0   ...  i       # i は自AS（AS65001）
+ *>  192.168.2.0/24   10.0.0.2  ...  65002 i
+```
+
+`Path`列から、`192.168.2.0/24`に AS65002 から到達できることがわかります。 
+</v-click>
 
 ---
 layout: section
@@ -1283,7 +1354,7 @@ Paths: (1 available, best #1, table default)
   - 送ったパケットは、世界中のルーターを伝って届けられる
 - インターネットは AS どうしが BGP ルーターで接続することでできている
   - インターネットでは経路情報を **BGP で自動的に交換**する
-  - 経路情報は **Static Routing** で設定することもできる
+  - 細かい設定は **Static Routing** で行うこともある
 - AS 間で送受信する経路情報には適切なフィルタが必要
 - **BGP Community** は経路操作の条件に使えるが用途は AS ごとのポリシー
   - **Well-known Community** は用途が世界的に統一されている
