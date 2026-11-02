@@ -11,13 +11,13 @@ nwdiag {
   network ネットワーク1 {
     address = "192.168.1.0/24";
     r1 [address = "eth-h1\n192.168.1.1"];
-    h1 [address = "eth1\n192.168.1.2"];
+    h1 [address = "eth-r1\n192.168.1.2"];
   }
 
   network ネットワーク2 {
     address = "192.168.2.0/24";
     r2 [address = "eth-h2\n192.168.2.1"];
-    h2 [address = "eth1\n192.168.2.2"];
+    h2 [address = "eth-r2\n192.168.2.2"];
   }
 
   network ルーター間接続 {
