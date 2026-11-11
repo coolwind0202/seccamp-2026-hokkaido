@@ -11,34 +11,5 @@
     shell = pkgs.zsh;
     initialPassword = "user";
   };
-
-  home-manager.users.user = { pkgs, ... }: {
-    nixpkgs.config.allowUnfree = true;
-
-    home.packages = [
-      pkgs.containerlab
-      pkgs.vim
-    ];
-
-    programs.zsh = {
-      enable = true;
-      oh-my-zsh = {
-        enable  = true;
-        plugins = [
-          "git"
-        ];
-        theme   = "robbyrussell";
-      }; 
-    };
-    programs.git = {
-      enable    = true;
-      settings.user = {      
-        name  = "coolwind0202";
-        email = "erable0226@gmail.com";
-      };
-    };
-
-    home.stateVersion = "26.11";
-  };
 }
 

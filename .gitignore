@@ -3,3 +3,6 @@ clab-*/
 
 # For some auto generated files 
 dist/
+
+# For sdcard build artifacts
+result/
