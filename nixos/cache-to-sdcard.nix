@@ -19,3 +19,4 @@
     serviceConfig.Type = "oneshot";
   };
 }
+

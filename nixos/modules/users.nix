@@ -7,6 +7,7 @@
     extraGroups = [
       "wheel"
       "libvirtd"
+      "docker"
     ];
     shell = pkgs.zsh;
     initialPassword = "user";

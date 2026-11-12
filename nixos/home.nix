@@ -5,6 +5,8 @@
   home.packages = [
     pkgs.containerlab
     pkgs.vim
+    pkgs.lazydocker
+    pkgs.netcat-openbsd
   ];
 
   programs.zsh = {
@@ -25,6 +27,15 @@
     settings.user = {      
       name  = "coolwind0202";
       email = "erable0226@gmail.com";
+    };
+  };
+
+  programs.ssh = {
+    enable = true;
+    matchBlocks."github.com" = {
+      hostname = "github.com";
+      user = "git";
+      proxyCommand = "nc -X 5 -x 127.0.0.1:1080 %h %p";
     };
   };
 

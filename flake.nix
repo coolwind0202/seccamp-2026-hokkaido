@@ -20,7 +20,8 @@
       ];
     in {
       nixosConfigurations.mc26do = nixpkgs.lib.nixosSystem {
-        modules = commonModules ++ [
+        specialArgs = { inherit self; };
+	modules = commonModules ++ [
           ./nixos/hardware-configuration.nix
         ]; 
       };
