@@ -14,7 +14,7 @@ showPageCount: true
 layout: section
 ---
 
-# はじめに！
+# はじめに
 
 ---
 
@@ -24,11 +24,10 @@ layout: section
   - 新千歳空港からバスで7分✈
   - 電子光工学科⚡
 - 好きな？技術
-  - TypeScript / Next.js / Unity（VFX Graph）
-  - Kubernetes / eBPF / VFS / Reversing
+  - TypeScript / Unity（VFX Graph）/ Kubernetes / eBPF / Reversing
+- Internet Week（NOC）/ FOSS4G Hokkaido, Local Developer Day（運営）
 - 連絡先
-  - [X](https://x.com/t6o_o6t)
-  - [Cosense(Scrapbox)](https://scrapbox.io/t6o-o6t)
+  - [X](https://x.com/t6o_o6t) / [Cosense(Scrapbox)](https://scrapbox.io/t6o-o6t)
 
 ---
 
@@ -46,12 +45,6 @@ B1 から毎年関わらせていただいています！💕
 | | | ミニ北海道 | 【今回】講師 | 
 
 ---
-
-# おことわり
-
-- IPv4 を前提とします。
-
----
 layout: section
 ---
 
@@ -61,9 +54,51 @@ layout: section
 
 # 機材の確認
 皆さんの手元に、次のものがあることを確認してください。
-- Raspberry Pi
-- 電源ケーブル
+- Raspberry Pi （以下「Pi」）
+- 電源アダプタ
 - LAN ケーブル
+- USB-LAN アダプタ
+
+---
+
+# LAN ケーブルを接続する
+
+LAN ケーブルの一端を、Raspberry Pi の LAN ポートに接続します。
+
+- あなたの PC に LAN ポートがない場合
+  - USB-LAN アダプタの USB 端子を、あなたの PC に接続します。
+  - アダプタの LAN 端子には、手順1 の もう一端を接続します。
+- あなたの PC に LAN ポートがある場合
+  - LAN ケーブルのもう一端をあなたの PC に接続します。
+
+---
+
+# Pi に ssh 接続する①
+
+Windows の Powershell や macOS の Terminal を開き、次のコマンドを実行します。
+
+```sh
+ssh mc26do.local
+```
+
+もし `ssh: Could not resolve hostname mc26do.local:` と表示されたら、1分ほど待って再度お試しください。
+
+それでもエラーが出る場合は相談してください。
+
+---
+
+# Pi に ssh 接続する②
+
+`(user@mc26do.local) Password:` と表示されたら、通信に成功しています。
+
+パスワード `user` を入力して Enter キーを押してください。<br>
+※ 入力中のパスワードは画面に表示されません。
+
+次のように表示されたら、認証に成功しています。
+```
+Last login: Thu Nov 12 07:08:46 2026 from 192.168.100.228
+➜  ~
+```
 
 ---
 
@@ -77,7 +112,7 @@ layout: section
 layout: section
 ---
 
-# DDoS 攻撃の概要
+# 講義の概要
 
 ---
 
@@ -101,124 +136,106 @@ Web サービスやネットワーク帯域に異常な負荷を与え、正規�
 
 とくに、マルウェアに感染した複数のコンピュータ「Botnet」から大量のパケットを送る DDoS 攻撃が一般的です。
 
----
-layout: section
----
+```mermaid
+flowchart LR
+    subgraph Malicious["DDoS 攻撃の基盤"]
+        Botmaster
+        CC["C&C サーバ"]
+    end
 
-# Botnet
+    Botmaster --> CC
 
----
-theme: soba 
-title: ITサービスを脅威から守る：DDoS攻撃とその防御について
-showPageCount: true
----
+    subgraph Botnet["Botnet"]
+        direction LR
+        B1["Bot 1"]
+        B2["Bot 2"]
+    end
 
-# ITサービスを脅威から守る：DDoS攻撃とその防御について
-## セキュリティ・キャンプ2026ミニ（北海道開催）
+    subgraph Targets["攻撃対象"]
+        T["標的サーバー"]
+    end
 
-公立千歳科学技術大学　理工学部　電子光工学科<br>
-高橋　楓
+    H1["未感染ホスト"]
 
----
-layout: section
----
+    CC -->|"攻撃命令を送信"| Botnet
 
-# はじめに！
+    Botnet -->|"パケット送信 (DDoS等)"| T
 
----
-
-
-# 自己紹介
-- 所属: 公立千歳科学技術大学 理工学部（4年）
-  - 新千歳空港からバスで7分✈
-  - 電子光工学科⚡
-- 好きな？技術
-  - TypeScript / Next.js / Unity（VFX Graph）
-  - Kubernetes / eBPF / VFS / Reversing
-- 連絡先
-  - [X](https://x.com/t6o_o6t)
-  - [Cosense(Scrapbox)](https://scrapbox.io/t6o-o6t)
+    Botnet -.->|"脆弱性を探索"| H1
+```
 
 ---
 
-# セキュリティ・キャンプとのかかわり
+# Botnet の拡大と対策
 
-B1 から毎年関わらせていただいています！💕
+Botnet は、インターネット上に公開されているデバイスの脆弱性を利用してマルウェアを感染させます。
 
-| 年度 | 学年 | 内容 | かかわり |
-| --- | --- | --- | --- |
-| 2023 | B1 | 全国大会 | **受講生**（Web セキュリティ） |
-| | | ミニ北海道 | 受講生 |
-| 2024 | B2 | ミニ石川 | チューター |
-| 2025 | B3 | ミニ山梨 | **講師** |
-| 2026 | B4 | コネクト | チューター（OS） |
-| | | ミニ北海道 | 【今回】講師 | 
+セキュリティ研究者は、フロー情報やNetwork Telescope、マルウェア解析を通して、Botnet の特徴を分析します。
+
+また、Botnet の拡大を抑えるため、セキュリティ研究者や法執行機関が連携し、「テイクダウン」という停止措置を行っています。
 
 ---
 
-# おことわり
+# DDoS as a Service
 
-- IPv4 を前提とします。
+DDoS 攻撃の実施をサービスとして提供する「DDoS as a Service」というビジネスが存在します。<br>
+テイクダウンを回避し安定的に供給することがマーケットでは重要です。
 
----
-layout: section
----
-
-# 演習の準備
-
----
-
-# 機材の確認
-皆さんの手元に、次のものがあることを確認してください。
-- Raspberry Pi
-- 電源ケーブル
-- LAN ケーブル
-
----
-
-# 機材の準備
-1. Raspberry Pi の電源をコンセントに接続してください。
-2. LAN ケーブルの一端を Raspberry Pi に接続してください。
-3. LAN ケーブルのもう一端を、ご自身のパソコンに接続してください。
+ユーザーは必ずしも営利目的ではなく、「オンラインゲームで有利になる」などの理由で攻撃を依頼するケースが多くみられます。
 
 
----
-layout: section
----
+```mermaid
+flowchart LR
+    U["ユーザー<br>(ダークネット上の購入者)"]
+    BM["Botmaster<br>(DDoS as a Service 運営者)"]
+    T["標的サーバー<br>(ゲームサーバー等)"]
+    SR["セキュリティ研究者"]
 
-# 講義概要
+    U -->|"攻撃の依頼・対価"| BM
 
----
+    BM -->|"攻撃の実行"| T
+    SR -.->|"解析・テイクダウン (妨害)"| BM
 
-# DoS （Denial of Service）攻撃
-
-Web サービスやネットワーク帯域に異常な負荷を与え、正規のユーザーがサービスを利用できないようにするサイバー犯罪です。
-
-
-### 例
-- 大量のパケットを送り、サーバーが処理限界に達するようにする。
-  - Reflection Attack (例: Smurf Attack, DNS amplification)
-- サーバーの脆弱性を悪用して、サービスを停止させる。
-  - SYN Flood: Linux カーネルの TCP 接続待ちキューを枯渇させる。
-  - Ping of Death: 不正な ICMP パケットを送り、バッファオーバーフローを引き起こす。
-
----
-
-# DDoS （Distributed DoS） 攻撃
-
-複数のコンピュータを使用した DoS 攻撃を DDoS 攻撃と呼びます。
-
-とくに、マルウェアに感染した複数のコンピュータ「Botnet」から大量のパケットを送る DDoS 攻撃が一般的です。
+    BM -.->|"テイクダウン回避策の強化"| SR
+```
 
 ---
 
 # DDoS 攻撃に対する防御
 
 CDN（Content Delivery Network）や ISP（Internet Service Provider）など<br>
-大規模トラフィックを扱う事業者は DDoS Scrubbing サービスを提供します。
+大規模トラフィックを扱う事業者は Scrubbing サービスを提供し、DDoS パケットを事前にフィルタします。
 
 インターネット上のAS （Autonomous System）では、BGP を活用し<br>
-DDoS 攻撃パケットを効率的に遮断しています。
+標的へのパケットや、攻撃元からのパケットを効率的に遮断しています。
+
+```mermaid
+flowchart LR
+    A["Botnet"]
+    S["CDN / ISP"]
+    AS1["上流 AS"]
+
+    subgraph AS2["標的側 AS"]
+      T["標的サーバー"]
+    end
+
+    A -->|"①トラフィック流入"| S
+    S -->|"②DDoS フィルタリング<br>(Scrubbing)"| S
+    S -->|"②'正常トラフィック転送"| T
+
+    AS1 <-->|"③BGP 連携<br>(BGP Flowspec / RTBH)"| S
+    A -.-x |"④攻撃元からの遮断<br>(Blackholing / ACL)"| AS1
+```
+
+---
+
+# 講義の流れ
+
+1. Botnet について、以下のことを学びます。
+   - Botmaster の視点: Botnet を構築し、 C&C サーバーから命令する流れ。
+   - セキュリティ研究者の視点: Botnet の振る舞いを調べ、停止させる手法。
+2. DDoS Scrubbing のネットワーク的な手法と DDoS 検知技術を学びます。
+3. RTBH / BGP Flowspec を用いて、パケットを遮断する手法を学びます。
 
 ---
 layout: section
@@ -268,7 +285,7 @@ Botnet は、マルウェアを連鎖的に感染させ、指数関数的に拡�
 
 C&C サーバは、Botnet 内の Bot に命令を一斉送信するための**司令塔**です。
 
-多くのマルウェアには C&C サーバの IP アドレスやドメイン名が静的に<br>
+単純なマルウェアには C&C サーバの IP アドレスやドメイン名が静的に<br>
 エンコードされており、感染後に C&C サーバとの接続が確立されます。
 
 ---
@@ -457,8 +474,6 @@ layout: section
 AS 間で大まかな経路情報を交換するプロトコルが BGP です。<br>
 AS 内で、AS 境界の BGP ルータどうしが行う BGP 通信は iBGP と呼ばれます。
 
->※ 不明点は事前講義資料をご確認ください。
-
 ---
 
 # Reflection Attack における送信元 IP アドレス詐称
@@ -484,64 +499,269 @@ uRPF
 
 ---
 
-# RTBH (Remotely Triggered Blackhole)
+# Blackhole Routing とは
 
-### Blackhole Community に応じてネクストホップを上書きする
+DDoS 攻撃を防御するための代表的な経路制御手法が **Blackhole Routing（RTBH：Remotely Triggered Black Hole）** です。
 
-`r22`では、BGP Community `65002:1`が付加された受信経路の<br>
-ネクストホップを`null0`（後述）に上書きすることにしましょう。
-
-```sh[r22.conf]
-route-map RM-BGP-IN permit 5
-  match community 65002:1
-  set ip next-hop null0
-```
+- 特定の IP アドレス宛ての通信を、ルーターの破棄用インターフェース（`blackhole` や `Null0`）へ誘導して強制的に破棄します。
+- ファイアウォールのような高度なパケット検査を行わず、ルーターのハードウェア転送処理のみで高速に通信を遮断できるため、大容量の攻撃トラフィックでも機器の負荷を抑えられます。
+- RTBH には大きく分けて **D/RTBH** と **S/RTBH** の 2 種類が存在します。
 
 ---
 
-### `null0` インターフェースへの上書きの意味
+## Blackhole インターフェース（破棄用経路）の設定
 
-`65002:1`が付加された受信経路のネクストホップを変更しました。
+RTBH を実現するためには、パケットを破棄するための仮想インターフェースを用意します。
 
-`r22`に届いたパケットは`r3`に転送されず`null0`にルーティングされます。
+これをBlackhole インターフェースといい、遮断対象のパケットを Blackhole にルーティングするだけで破棄されます。
+
+
+`configs/r21/frr.conf` に次のように記述します。
+
+```sh {1}
+ip route 192.0.2.1/32 blackhole
+```
+
+ダミーアドレス（`192.0.2.1/32`）に対して `blackhole` を指定した Static Routing を設定しました。
+
+---
+
+## Blackhole へルートする仕組み
+
+遮断したい通信のネクストホップを `192.0.2.1` に書き換えると、ルーターは「再帰的ルーティング」をもとに、パケットが Blackhole Routing され、破棄すべきということを認識します。 
 
 ```mermaid
 flowchart LR
-
-subgraph r22
-  192.168.2.2
-  null0
-  10.0.2.1
-end
-
-subgraph r3
-  10.0.2.2
-end
-
-subgraph r21
-  192.168.2.1
-end
-
-192.168.2.1 --> 192.168.2.2
-192.168.2.2 -.- 10.0.2.1
-10.0.2.1 -. この経路が上書きされた .-x 10.0.2.2
-192.168.2.2 ==> null0 
+    Pkt["受信パケット<br/>宛先: 192.168.3.2"] --> RIB1["ルーティングテーブル<br/>192.168.3.2/32 → 192.0.2.1"]
+    RIB1 -->|192.0.2.1 で再検索| RIB2["ルーティングテーブル<br />192.0.2.1/32 → blackhole"]
+    RIB2 --> Drop(("パケット破棄<br/>(Drop)"))
 ```
 
-`null0`にルーティングされたパケットは破棄される規則があるので、<br>
-`192.168.3.0/24`宛のパケットは`r22`によって**破棄される**はずです。
+「ネクストホップ を `192.0.2.1` に設定する」という操作で、D/RTBH と S/RTBH は同じ仕組みでパケットを破棄することができるようになります。
 
 ---
 
-### ネクストホップを上書きした結果を確認する
+# D/RTBH（Destination-based RTBH）
 
-1. `h1`から`h3`に<Link to="traceroute">mtr</Link>を実行しましょう。<br>
-   最終ホップが`r22`であり、疎通しないことを確認してください。
-2. `r22`の<Link to="routing-table">ルーティングテーブルを確認</Link>してください。
+**D/RTBH** は、攻撃の「宛先（Destination）」となる IP アドレス（例：Victim の `192.168.3.2/32`）への通信をすべて破棄する手法です。
 
-<v-click>
+- **メリット**：攻撃トラフィックを ISP 網の入り口（エッジルーター）や上位の Upstream プロバイダ側で遮断できるため、回線帯域の輻輳を防げる。
+- **デメリット**：標的への**正常な通信もすべて遮断**されてしまう。
 
-</v-click>
-
+```mermaid
+flowchart LR
+    Attacker["攻撃元 / 正常ユーザー"] -->|192.168.3.2 宛て通信| R21["ISP ルーター (r21)"]
+    ExaBGP["ExaBGP"] -.->|"BGP 広報: 192.168.3.2/32<br/>(Community: 65535:666)"| R21
+    R21 -->|経路誘導| BH(("blackhole<br/>(破棄)"))
+    R21 -.-x|通信遮断| Victim["Victim (192.168.3.2)"]
+```
 
 ---
+
+## Blackhole Community とは
+
+D/RTBH を発動する際、BGP のパス属性である **Community（コミュニティ値）** を目印として利用します。
+
+- BGP ルートに特定のコミュニティ値を付与して広報することで、受信側のルーター（ISP のエッジルーターや Upstream）に「この経路宛ての通信は破棄してほしい」という意図を伝達できます。
+- RFC 7999 では、標準の Blackhole Community として **`65535:666`** が予約されています。
+
+---
+
+## D/RTBH を定義する①：Community List
+
+`r21` が受信した BGP 経路の中から Blackhole Community（`65535:666`）が付与された経路を識別するための **Community List** を定義します。
+
+`configs/r21/frr.conf` に次のように記述します。
+
+```sh {1}
+bgp community-list standard CL-BLACKHOLE permit 65535:666
+```
+
+- `bgp community-list standard` を用いて、`CL-BLACKHOLE` という名前で一致条件となるコミュニティ値 `65535:666` を指定します。
+
+---
+
+## D/RTBH を定義する②：RM-UPSTREAM-OUT
+
+次に、Upstream（AS65001 / `r1`）向けのアウトバウンドルートマップ `RM-UPSTREAM-OUT` に、Blackhole 対象経路を通過させるルールを追加します。
+
+`configs/r21/frr.conf` に次のように記述します。
+
+```sh {1-2}
+route-map RM-UPSTREAM-OUT permit 5
+ match community CL-BLACKHOLE
+!
+route-map RM-UPSTREAM-OUT permit 10
+```
+
+今回のルール（`5`）は既存のルール（`10`）よりシーケンス番号が若いので、先に評価されます。
+先ほど定義した `CL-BLACKHOLE` に合致する経路を許可）し、Upstream へ広報できるようにします。
+
+---
+
+## D/RTBH を定義する③：ネクストホップ設定
+
+`r21` 自身でも攻撃トラフィックを破棄できるよう、Blackhole Community が付与された経路のネクストホップを、先ほど用意した破棄用アドレス（`192.0.2.1`）へ書き換えます。
+
+`configs/r21/frr.conf` に次のように記述します。
+
+```sh {1-3}
+route-map RM-IBGP-IN permit 10
+ match community CL-BLACKHOLE
+ set ip next-hop 192.0.2.1
+```
+
+- `RM-IBGP-IN` で `CL-BLACKHOLE` に一致した経路のネクストホップを `192.0.2.1` に書き換えることで、再帰的ルックアップにより該当経路宛ての通信が `blackhole` へ誘導され破棄されます。
+
+---
+
+## D/RTBH を定義する④：ExaBGP の広報設定
+
+続いて、ExaBGP から `r21` へ Blackhole 経路（`192.168.3.2/32`）を広報するための設定を用意します。
+
+`configs/exabgp/drtbh.conf` の `static` ブロックに次のように記述します。
+
+```sh {2}
+static {
+    route 192.168.3.2/32 next-hop 192.168.2.4 community [65535:666];
+}
+```
+
+- `route 192.168.3.2/32`：遮断対象（Victim）の IP アドレス。
+- `community [65535:666]`：Blackhole Community を付与して広報する。
+
+---
+
+## D/RTBH の動作確認①（準備と経路広報）
+
+設定ファイルを編集したら、環境を再構築して ExaBGP から手動で Blackhole 経路を広報します。
+
+1. `sudo containerlab redeploy` でリセットします。
+2. `h11` から `victim`（`192.168.3.2`）へ `ping` が通ることを確認します。
+3. `lazydocker` で `exabgp` コンテナに入り、次のコマンドで広報を実行します。
+
+```sh
+exabgp /etc/exabgp/drtbh.conf
+```
+
+---
+
+## D/RTBH の動作確認②（ルーティングテーブルと遮断の確認）
+
+ExaBGP での経路広報後、ルーターの経路情報と通信の遮断状態を確認します。
+
+1. `lazydocker` で `r21` コンテナに入って `vtysh` を起動し、BGP RIB とルーティングテーブルの変化を確認します。
+
+```sh
+show ip bgp 192.168.3.2/32
+show ip route 192.168.3.2/32
+```
+
+2. `r21` でネクストホップが `192.0.2.1`（`blackhole`）に解決されていることを確認します。
+3. `h11` から `victim` への `ping` が遮断されることを確認します。
+
+---
+
+# S/RTBH（Source-based RTBH）
+
+**S/RTBH** は、宛先ではなく攻撃の「送信元（Source）」IP アドレスに基づいて通信を遮断する手法です。
+
+```mermaid
+flowchart LR
+    Attacker["攻撃元 h11<br/>(192.168.1.2)"] -.->|①攻撃パケット| R21["ISP ルーター (r21)"]
+    User["正常ユーザー h21<br/>(192.168.2.11)"] -->|②正常通信| R21
+    ExaBGP["ExaBGP"] -.->|"BGP 広報: 192.168.1.2/32<br/>(Community: 65535:666)"| R21
+    R21 -.-x|①送信元が blackhole のため破棄| BH(("blackhole<br/>(破棄)"))
+    R21 -->|②通過許可| Victim["Victim (192.168.3.2)"]
+```
+
+---
+
+# S/RTBH（Source-based RTBH）
+
+S/RTBH では、BGP で送信元 IP アドレスに対する `blackhole` 経路を配布し、ルーターの 「uRPF」（Unicast Reverse Path Forwarding）機能と連携させることでパケットを破棄します。
+
+- **メリット**：攻撃元からのトラフィックのみを遮断できるため、**正常なユーザーからの通信を継続**できます。
+- **デメリット**：攻撃元 IP アドレスが大量に存在する場合は、経路テーブルなどのリソースを圧迫します。
+
+---
+
+## uRPF とは
+
+**uRPF** は、ルーターがパケットを受信した際、その「送信元 IP アドレス」への戻り経路（ルーティングテーブル）を参照して正当性を検証する仕組みです。
+
+```mermaid
+flowchart LR
+    Pkt["受信パケット<br/>(送信元: Src IP / 受信 IF: eth-r1)"] --> Check["ルーティングテーブルで<br/>Src IP への最適経路を検索"]
+    Check -->|"受信 IF (eth-r1) と一致"| Allow["転送許可<br/>(Forward)"]
+    Check -->|"不一致 / blackhole 向き"| Drop(("パケット破棄<br/>(Drop)"))
+```
+
+送信元 IP アドレスの詐称を検出するために用いられますが、S/RTBH では特定の送信元 IP アドレスからのパケットを破棄するために用いられます。
+
+---
+
+## uRPF のモード
+
+- **Strict モード**：送信元 IP アドレスへの最適経路が「パケットを受信したインターフェース」と一致しない場合、パケットを破棄します。
+- **Loose モード**：送信元 IP アドレスへの経路がルーティングテーブルに存在しない場合、または `blackhole`（`Null0`）に向いている場合にパケットを破棄します。
+
+---
+
+## uRPF の動作例
+
+ルーターのルーティングテーブルが次のような状態のとき、インターフェース `eth-r1` からパケットを受信した場合の挙動を確認します。
+
+| 宛先プレフィックス | ネクストホップ / 出力先 | 送信元 `192.168.1.2` の通信 | 送信元 `192.168.2.11` の通信 |
+| :--- | :--- | :--- | :--- |
+| `192.168.1.0/24` | `eth-r1` | **許可**（受信 IF と一致） | — |
+| `192.168.1.2/32` | `blackhole` | **破棄**（最適経路が `blackhole`） | — |
+| `192.168.2.0/24` | `eth-sw2` | — | **許可**（`eth-sw2` 側で受信時） |
+
+- S/RTBH で攻撃元（`192.168.1.2/32`）の経路を `blackhole` に向けると、最長一致（Longest Prefix Match）により `blackhole` が優先され、uRPF によって通信が破棄されます。
+
+---
+
+## S/RTBH を定義する：ExaBGP の広報設定
+
+`r21` の Upstream 側インターフェース（`eth-r1`）では、すでに Strict モードの uRPF が有効化されています。
+
+攻撃元ホスト `h11`（`192.168.1.2/32`）の Blackhole 経路を広報するため、`configs/exabgp/srtbh.conf` の `static` ブロックに次のように記述します。
+
+```sh {2}
+static {
+    route 192.168.1.2/32 next-hop 192.168.2.4 community [65535:666];
+}
+```
+
+- `route 192.168.1.2/32`：遮断したい攻撃元（`h11`）の IP アドレス。
+
+---
+
+## S/RTBH の動作確認①（準備と経路広報）
+
+環境を再構築し、初期状態の疎通を確認して ExaBGP から経路を広報します。
+
+1. `sudo containerlab redeploy`
+2. `h11`（`192.168.1.2`）と `h21`（`192.168.2.11`）の双方から `victim` へ `ping` が通ることを確認します。
+3. `lazydocker` で `exabgp` コンテナに入り次のコマンドで広報を実行します。
+
+```sh
+exabgp /etc/exabgp/srtbh.conf
+```
+
+---
+
+## S/RTBH の動作確認②（ルーティングテーブルと遮断の確認）
+
+ExaBGP による経路広報後、`r21` の経路情報と送信元ごとの通信可否を確認しましょう。
+
+1. `lazydocker` で `r21` コンテナに入って `vtysh` を起動し、BGP RIB とルーティングテーブルの変化を確認します。
+
+```sh
+show ip bgp 192.168.1.2/32
+show ip route 192.168.1.2/32
+```
+
+2. `r21` で `192.168.1.2/32` のネクストホップが `192.0.2.1`（`blackhole`）に解決されていることを確認します。
+3. 攻撃元である **`h11` からの通信のみが遮断**され、ISP 内の **`h21` からの通信は許可（継続）される**ことを確認します。
