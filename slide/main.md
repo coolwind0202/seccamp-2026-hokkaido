@@ -14,7 +14,7 @@ showPageCount: true
 layout: section
 ---
 
-# はじめに！
+# はじめに
 
 ---
 
@@ -24,11 +24,10 @@ layout: section
   - 新千歳空港からバスで7分✈
   - 電子光工学科⚡
 - 好きな？技術
-  - TypeScript / Next.js / Unity（VFX Graph）
-  - Kubernetes / eBPF / VFS / Reversing
+  - TypeScript / Unity（VFX Graph）/ Kubernetes / eBPF / Reversing
+- Internet Week（NOC）/ FOSS4G Hokkaido, Local Developer Day（運営）
 - 連絡先
-  - [X](https://x.com/t6o_o6t)
-  - [Cosense(Scrapbox)](https://scrapbox.io/t6o-o6t)
+  - [X](https://x.com/t6o_o6t) / [Cosense(Scrapbox)](https://scrapbox.io/t6o-o6t)
 
 ---
 
@@ -46,12 +45,6 @@ B1 から毎年関わらせていただいています！💕
 | | | ミニ北海道 | 【今回】講師 | 
 
 ---
-
-# おことわり
-
-- IPv4 を前提とします。
-
----
 layout: section
 ---
 
@@ -61,9 +54,51 @@ layout: section
 
 # 機材の確認
 皆さんの手元に、次のものがあることを確認してください。
-- Raspberry Pi
-- 電源ケーブル
+- Raspberry Pi （以下「Pi」）
+- 電源アダプタ
 - LAN ケーブル
+- USB-LAN アダプタ
+
+---
+
+# LAN ケーブルを接続する
+
+LAN ケーブルの一端を、Raspberry Pi の LAN ポートに接続します。
+
+- あなたの PC に LAN ポートがない場合
+  - USB-LAN アダプタの USB 端子を、あなたの PC に接続します。
+  - アダプタの LAN 端子には、手順1 の もう一端を接続します。
+- あなたの PC に LAN ポートがある場合
+  - LAN ケーブルのもう一端をあなたの PC に接続します。
+
+---
+
+# Pi に ssh 接続する①
+
+Windows の Powershell や macOS の Terminal を開き、次のコマンドを実行します。
+
+```sh
+ssh mc26do.local
+```
+
+もし `ssh: Could not resolve hostname mc26do.local:` と表示されたら、1分ほど待って再度お試しください。
+
+それでもエラーが出る場合は相談してください。
+
+---
+
+# Pi に ssh 接続する②
+
+`(user@mc26do.local) Password:` と表示されたら、通信に成功しています。
+
+パスワード `user` を入力して Enter キーを押してください。<br>
+※ 入力中のパスワードは画面に表示されません。
+
+次のように表示されたら、認証に成功しています。
+```
+Last login: Thu Nov 12 07:08:46 2026 from 192.168.100.228
+➜  ~
+```
 
 ---
 
@@ -77,7 +112,7 @@ layout: section
 layout: section
 ---
 
-# DDoS 攻撃の概要
+# 講義の概要
 
 ---
 
@@ -101,124 +136,106 @@ Web サービスやネットワーク帯域に異常な負荷を与え、正規�
 
 とくに、マルウェアに感染した複数のコンピュータ「Botnet」から大量のパケットを送る DDoS 攻撃が一般的です。
 
----
-layout: section
----
+```mermaid
+flowchart LR
+    subgraph Malicious["DDoS 攻撃の基盤"]
+        Botmaster
+        CC["C&C サーバ"]
+    end
 
-# Botnet
+    Botmaster --> CC
 
----
-theme: soba 
-title: ITサービスを脅威から守る：DDoS攻撃とその防御について
-showPageCount: true
----
+    subgraph Botnet["Botnet"]
+        direction LR
+        B1["Bot 1"]
+        B2["Bot 2"]
+    end
 
-# ITサービスを脅威から守る：DDoS攻撃とその防御について
-## セキュリティ・キャンプ2026ミニ（北海道開催）
+    subgraph Targets["攻撃対象"]
+        T["標的サーバー"]
+    end
 
-公立千歳科学技術大学　理工学部　電子光工学科<br>
-高橋　楓
+    H1["未感染ホスト"]
 
----
-layout: section
----
+    CC -->|"攻撃命令を送信"| Botnet
 
-# はじめに！
+    Botnet -->|"パケット送信 (DDoS等)"| T
 
----
-
-
-# 自己紹介
-- 所属: 公立千歳科学技術大学 理工学部（4年）
-  - 新千歳空港からバスで7分✈
-  - 電子光工学科⚡
-- 好きな？技術
-  - TypeScript / Next.js / Unity（VFX Graph）
-  - Kubernetes / eBPF / VFS / Reversing
-- 連絡先
-  - [X](https://x.com/t6o_o6t)
-  - [Cosense(Scrapbox)](https://scrapbox.io/t6o-o6t)
+    Botnet -.->|"脆弱性を探索"| H1
+```
 
 ---
 
-# セキュリティ・キャンプとのかかわり
+# Botnet の拡大と対策
 
-B1 から毎年関わらせていただいています！💕
+Botnet は、インターネット上に公開されているデバイスの脆弱性を利用してマルウェアを感染させます。
 
-| 年度 | 学年 | 内容 | かかわり |
-| --- | --- | --- | --- |
-| 2023 | B1 | 全国大会 | **受講生**（Web セキュリティ） |
-| | | ミニ北海道 | 受講生 |
-| 2024 | B2 | ミニ石川 | チューター |
-| 2025 | B3 | ミニ山梨 | **講師** |
-| 2026 | B4 | コネクト | チューター（OS） |
-| | | ミニ北海道 | 【今回】講師 | 
+セキュリティ研究者は、フロー情報やNetwork Telescope、マルウェア解析を通して、Botnet の特徴を分析します。
+
+また、Botnet の拡大を抑えるため、セキュリティ研究者や法執行機関が連携し、「テイクダウン」という停止措置を行っています。
 
 ---
 
-# おことわり
+# DDoS as a Service
 
-- IPv4 を前提とします。
+DDoS 攻撃の実施をサービスとして提供する「DDoS as a Service」というビジネスが存在します。<br>
+テイクダウンを回避し安定的に供給することがマーケットでは重要です。
 
----
-layout: section
----
-
-# 演習の準備
-
----
-
-# 機材の確認
-皆さんの手元に、次のものがあることを確認してください。
-- Raspberry Pi
-- 電源ケーブル
-- LAN ケーブル
-
----
-
-# 機材の準備
-1. Raspberry Pi の電源をコンセントに接続してください。
-2. LAN ケーブルの一端を Raspberry Pi に接続してください。
-3. LAN ケーブルのもう一端を、ご自身のパソコンに接続してください。
+ユーザーは必ずしも営利目的ではなく、「オンラインゲームで有利になる」などの理由で攻撃を依頼するケースが多くみられます。
 
 
----
-layout: section
----
+```mermaid
+flowchart LR
+    U["ユーザー<br>(ダークネット上の購入者)"]
+    BM["Botmaster<br>(DDoS as a Service 運営者)"]
+    T["標的サーバー<br>(ゲームサーバー等)"]
+    SR["セキュリティ研究者"]
 
-# 講義概要
+    U -->|"攻撃の依頼・対価"| BM
 
----
+    BM -->|"攻撃の実行"| T
+    SR -.->|"解析・テイクダウン (妨害)"| BM
 
-# DoS （Denial of Service）攻撃
-
-Web サービスやネットワーク帯域に異常な負荷を与え、正規のユーザーがサービスを利用できないようにするサイバー犯罪です。
-
-
-### 例
-- 大量のパケットを送り、サーバーが処理限界に達するようにする。
-  - Reflection Attack (例: Smurf Attack, DNS amplification)
-- サーバーの脆弱性を悪用して、サービスを停止させる。
-  - SYN Flood: Linux カーネルの TCP 接続待ちキューを枯渇させる。
-  - Ping of Death: 不正な ICMP パケットを送り、バッファオーバーフローを引き起こす。
-
----
-
-# DDoS （Distributed DoS） 攻撃
-
-複数のコンピュータを使用した DoS 攻撃を DDoS 攻撃と呼びます。
-
-とくに、マルウェアに感染した複数のコンピュータ「Botnet」から大量のパケットを送る DDoS 攻撃が一般的です。
+    BM -.->|"テイクダウン回避策の強化"| SR
+```
 
 ---
 
 # DDoS 攻撃に対する防御
 
 CDN（Content Delivery Network）や ISP（Internet Service Provider）など<br>
-大規模トラフィックを扱う事業者は DDoS Scrubbing サービスを提供します。
+大規模トラフィックを扱う事業者は Scrubbing サービスを提供し、DDoS パケットを事前にフィルタします。
 
 インターネット上のAS （Autonomous System）では、BGP を活用し<br>
-DDoS 攻撃パケットを効率的に遮断しています。
+標的へのパケットや、攻撃元からのパケットを効率的に遮断しています。
+
+```mermaid
+flowchart LR
+    A["Botnet"]
+    S["CDN / ISP"]
+    AS1["上流 AS"]
+
+    subgraph AS2["標的側 AS"]
+      T["標的サーバー"]
+    end
+
+    A -->|"①トラフィック流入"| S
+    S -->|"②DDoS フィルタリング<br>(Scrubbing)"| S
+    S -->|"②'正常トラフィック転送"| T
+
+    AS1 <-->|"③BGP 連携<br>(BGP Flowspec / RTBH)"| S
+    A -.-x |"④攻撃元からの遮断<br>(Blackholing / ACL)"| AS1
+```
+
+---
+
+# 講義の流れ
+
+1. Botnet について、以下のことを学びます。
+   - Botmaster の視点: Botnet を構築し、 C&C サーバーから命令する流れ。
+   - セキュリティ研究者の視点: Botnet の振る舞いを調べ、停止させる手法。
+2. DDoS Scrubbing のネットワーク的な手法と DDoS 検知技術を学びます。
+3. RTBH / BGP Flowspec を用いて、パケットを遮断する手法を学びます。
 
 ---
 layout: section
@@ -268,7 +285,7 @@ Botnet は、マルウェアを連鎖的に感染させ、指数関数的に拡�
 
 C&C サーバは、Botnet 内の Bot に命令を一斉送信するための**司令塔**です。
 
-多くのマルウェアには C&C サーバの IP アドレスやドメイン名が静的に<br>
+単純なマルウェアには C&C サーバの IP アドレスやドメイン名が静的に<br>
 エンコードされており、感染後に C&C サーバとの接続が確立されます。
 
 ---
